@@ -1,0 +1,63 @@
+type,title,body,tags,creation_date,author,link
+question,[Question] How does Google categorize results from its image search?,"While doing a Google image search, the page displays some figured out categories for the images of the topic being searched for. I'm interested in learning how this works, and how it chooses and creates categories.
+Unfortunately, I couldn't find much about it at all. Is anyone able to shed some light on algorithms they may be using to do this, and what basis these categories are created from?
+For example, if I search for ""animals"" I get the categories:
+
+""cute"", ""baby"", ""wild"", ""farm"", ""zoo"", ""clipart"".
+
+If I go into ""wild"", I then have subcategories:
+
+""forest"", ""baby"", ""africa"", ""clipart"", ""rainforest"", ""domestic"".
+
+",machine-learning; classification; google; search,2014-06-26,John Smith,https://demo.stackenterprise.co/questions/594
+answer,[Answer] How does Google categorize results from its image search?,"I thought of expanding a bit on the answer by Stanpol. While recommendation system is one approach of suggesting related queries, one more standard information retrieval based approach is the query expansion technique.
+Generally speaking, query expansion involves selecting additional terms from the top ranked documents retrieved in response to an initial query. Terms are typically selected by a combination of a term scoring function such as tf-idf and a co-occurrence based measure.
+For example, in response to a query term ""animal"", a term selection function may choose the term ""zoo"", because
+
+""zoo"" may be a dominating term (high tf-idf) in the top (say 10) documents retrieved in response to the query ""animal""
+""zoo"" may co-occur frequently (in close proximity) with the original query term ""animal"" in these documents",machine-learning; classification; google; search,2014-06-26,Jane Austen,https://demo.stackenterprise.co/questions/594/602#602
+question,"[Question] When, if ever, will “peak bitcoin” occur?","
+My (limited) understanding of bitcoin and other cryptocurrencies is that the costs of ""mining"" bitcoins was quite low in the early days, and the limiting factor in how fast they were mined was the small number of people who had the infrastructure to do so. As time went on, however, the algorithms for mining bitcoins made it harder and and harder to get a new bitcoin in this way, and it is now rather difficult for anyone but the most serious miners to successfully mine a new coin.
+This description of bitcoin's history makes it sound like an awful like a normal commodity such as crude oil: it's easy to get the first barrels out of the ground, when there's not much capacity to do so; but it gets harder as time goes on. The net result (according to Hubbert, at least) is that there is a peak in the extraction rate of the commodity. This is often referred to as ""peak oil"" in the case of crude oil.
+Has anyone done a similar analysis to find out when ""peak Bitcoin"" or ""peak Etherium"" or what-have-you will occur? In other words, in what year will the rate at which new bitcoins are being mined reach its peak? Has this happened already? Or is there something about cryptocurrencies that make them immune to these sorts of effects?
+",history,2021-03-10,Tony Stark,https://demo.stackenterprise.co/questions/16698
+answer,"[Answer] When, if ever, will “peak bitcoin” occur?","At the beginning of Bitcoin, every newly mined block (about every 10 minutes) creates 50 bitcoins. This is called the block subsidy. About every 4 years, this number cuts in half. Therefore, the peak extraction rate was about the first 4 years of Bitcoin's existence.
+In fact, it was from 3 January 2009 to 28 November 2012.
+The block reward includes both the block subsidy, and the transaction fees of transactions included in the block, so miners still get bitcoins, but they are not newly ""extracted"" bitcoins, they are bitcoins that someone else has paid.
+Note that one block is mined about every 10 minutes. The number of miners is irrelevant. The speed of the miners is irrelevant. The system automatically adjusts itself so that one block is mined about every 10 minutes. That is the only reason why mining requires a lot more computational power than it used to - you are competing with a lot more people.",history,2021-03-10,Brandon Sanderson,https://demo.stackenterprise.co/questions/16698/16699#16699
+question,[Question] How to read several JSON files to a dataframe in R?,"I have a folder with 30,000 plus JSON file. A sample file with contents is posted below.
+{
+""name"": null, ""release_date_local"": null, ""title"": ""3 (2011)"", 
+""opening_weekend_take"": 1234, ""year"": 2011,
+""release_date_wide"": ""2011-09-16"", ""gross"": 59954
+}
+
+However, I need the data in a df in a structure as given below:
+name relase_date_local title    opening_weekend_take year release_date gross
+NA   NA                3 (2011) 1234                 2011 2011-09-16   5994
+
+Here is my code snippet to get all the files as a list:
+path = ""./Week1/jsonfiles""
+temp = list.files(path, pattern = ""*.json"")
+filename = paste(path, temp, sep = ""/"")
+movies = c()
+for (i in filename){
+  movie = fromJSON(file = i)
+  movies = c(movies, movie)
+}
+
+Please advise, how can I read all 30,000 files as rows of a df?",r; dataset; data-cleaning; json,2016-05-29,Bart Simpson,https://demo.stackenterprise.co/questions/11987
+answer,[Answer] How to read several JSON files to a dataframe in R?,"First, you can use the full.names parameter to list.files() to get
+the full path added to each file.
+temp <- list.files(path, pattern=""*.json"", full.names=TRUE)
+
+Next, there are issues with the data since they contain NULL values
+which throws off a quick-and-dirty solution. So, we have to take each
+list element and convert any NULL to NA.
+Finally, we can use the handy purrr::map_df() to take the whole list
+of lists and turn them into a data.frame:
+movies <- purrr::map_df(temp, function(x) { 
+  purrr::map(jsonlite::fromJSON(x), function(y) ifelse(is.null(y), NA, y)) 
+})
+
+",r; dataset; data-cleaning; json,2016-05-29,Tina Turner,https://demo.stackenterprise.co/questions/11987/11989#11989

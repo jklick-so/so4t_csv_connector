@@ -9,7 +9,6 @@ import csv
 import datetime
 import html
 import time
-from statistics import median
 
 # Third-party libraries
 import requests

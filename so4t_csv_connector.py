@@ -56,7 +56,6 @@ def get_args():
 
 def get_api_data(args):
 
-
     v2client = V2Client(args)
     
     api_data = {}
@@ -150,14 +149,13 @@ class V2Client(object):
     def get_items(self, endpoint_url, filter_id):
         
         params = {
-            'page': 1,
+            'page': 1, # if page is out of range, API returns empty list (no error)
             'pagesize': 100,
         }
         if filter_id:
             params['filter'] = filter_id
 
-        # SO Business uses a token, SO Enterprise uses a key
-        if not self.soe:
+        if not self.soe: # SO Basic and Business instances require a team slug in the params
             params['team'] = self.team_slug
 
         items = []
@@ -167,17 +165,20 @@ class V2Client(object):
                                     verify=self.ssl_verify)
             
             if response.status_code != 200:
+                # Many API call failures result in an HTTP 400 status code (Bad Request)
+                # To understand the reason for the 400 error, specific API error codes can be 
+                # found here: https://api.stackoverflowteams.com/docs/error-handling
                 print(f"/{endpoint_url} API call failed with status code: {response.status_code}.")
                 print(response.text)
                 print(f"Failed request URL and params: {response.request.url}")
                 break
 
             items += response.json().get('items')
-            if not response.json().get('has_more'):
+            if not response.json().get('has_more'): # If there are no more items, break the loop
                 break
 
             # If the endpoint gets overloaded, it will send a backoff request in the response
-            # Failure to backoff will result in a 502 error
+            # Failure to backoff will result in an HTTP 502 status code
             if response.json().get('backoff'):
                 backoff_time = response.json().get('backoff') + 1
                 print(f"API backoff request received. Waiting {backoff_time} seconds...")

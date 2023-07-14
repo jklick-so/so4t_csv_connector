@@ -177,7 +177,7 @@ class V2Client(object):
                 break
 
             # If the endpoint gets overloaded, it will send a backoff request in the response
-            # Failure to backoff will result in an 502 error (throttle_violation)
+            # Failure to backoff will result in a 502 error (throttle_violation)
             if response.json().get('backoff'):
                 backoff_time = response.json().get('backoff') + 1
                 print(f"API backoff request received. Waiting {backoff_time} seconds...")

@@ -59,8 +59,36 @@ def get_api_data(args):
     
     api_data = {}
     api_data['questions'] = v2client.get_all_questions(
-        filter_id='!-(C9p6W5zHzR.xzw(UcCeR(6Z.YqYklUgN-bcu69o-O71EcDlgKKXF)q3H')
+        filter_id='!6CIEk5ti8eMPd7h4uniX0PRKhAlr8DzE7F-_-qO)C.PF6Mg1bbUIlgJBdTu')
     api_data['articles'] = v2client.get_all_articles(filter_id='!.FtrDbhbGaLQMYD--XljcS.1ETL-U')
+    # Filter codes can be deciphered here: https://api.stackexchange.com/docs/read-filter
+    # Complete list of required fields to include in filter:
+        # article.body
+        # article.creation_date
+        # article.last_edit_date
+        # article.link
+        # article.owner
+        # article.score
+        # article.tags
+        # article.title
+        # article.view_count
+        # answer.body
+        # answer.creation_date
+        # answer.is_accepted
+        # answer.last_edit_date
+        # answer.link
+        # answer.owner
+        # answer.score
+        # question.answers
+        # question.body
+        # question.creation_date
+        # question.last_edit_date
+        # question.link
+        # question.owner
+        # question.score
+        # question.tags
+        # question.title
+        # question.view_count
 
     return api_data
 
@@ -199,6 +227,7 @@ def format_data_for_csv(api_data):
                 answer['type'] = 'answer'
                 answer['title'] = '[Answer] ' + question['title']
                 answer['tags'] = question['tags']
+                answer['view_count'] = question['view_count']
                 csv_data.append(answer)
         
         question['type'] = 'question'
@@ -217,6 +246,11 @@ def format_data_for_csv(api_data):
         item['creation_date'] = convert_timestamp_to_date(item['creation_date'])
         item['tags'] = convert_tags_to_string(item['tags'])
         item['title'] = decode_html_encoding(item['title'])
+        try:
+            item['last_edit_date'] = convert_timestamp_to_date(item['last_edit_date'])
+        except KeyError: # if the content was never edited, last_edit_date key will not exist
+            item['last_edit_date'] = ''
+
 
     return csv_data
 
@@ -252,7 +286,8 @@ def decode_html_encoding(text):
 
 def write_csv(csv_data):
 
-    csv_columns = ['type', 'title', 'body', 'tags', 'creation_date', 'author', 'link']
+    csv_columns = ['type', 'title', 'body', 'tags', 'creation_date', 'last_edit_date', 'author',
+                    'view_count', 'score', 'link']
 
     with open(CSV_NAME, 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=csv_columns, extrasaction='ignore')

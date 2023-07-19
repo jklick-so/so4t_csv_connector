@@ -56,39 +56,47 @@ def get_args():
 def get_api_data(args):
 
     v2client = V2Client(args)
-    
     api_data = {}
-    api_data['questions'] = v2client.get_all_questions(
-        filter_id='!6CIEk5ti8eMPd7h4uniX0PRKhAlr8DzE7F-_-qO)C.PF6Mg1bbUIlgJBdTu')
-    api_data['articles'] = v2client.get_all_articles(filter_id='!.FtrDbhbGaLQMYD--XljcS.1ETL-U')
-    # Filter codes can be deciphered here: https://api.stackexchange.com/docs/read-filter
-    # Complete list of required fields to include in filter:
-        # article.body
-        # article.creation_date
-        # article.last_edit_date
-        # article.link
-        # article.owner
-        # article.score
-        # article.tags
-        # article.title
-        # article.view_count
-        # answer.body
-        # answer.creation_date
-        # answer.is_accepted
-        # answer.last_edit_date
-        # answer.link
-        # answer.owner
-        # answer.score
-        # question.answers
-        # question.body
-        # question.creation_date
-        # question.last_edit_date
-        # question.link
-        # question.owner
-        # question.score
-        # question.tags
-        # question.title
-        # question.view_count
+
+    # Get questions (and answers)
+    filter_attributes = [
+        'answer.body',
+        'answer.creation_date',
+        'answer.is_accepted',
+        'answer.last_edit_date',
+        'answer.link',
+        'answer.owner',
+        'answer.score',
+        'question.answers',
+        'question.body',
+        'question.creation_date',
+        'question.last_edit_date',
+        'question.link',
+        'question.owner',
+        'question.score',
+        'question.tags',
+        'question.title',
+        'question.view_count'
+    ]
+    filter_attributes = ';'.join(filter_attributes)
+    filter_string = v2client.create_filter(filter_attributes, 'default')
+    api_data['questions'] = v2client.get_all_questions(filter_string=filter_string)
+    
+    # Get articles
+    filter_attributes = [
+        'article.body',
+        'article.creation_date',
+        'article.last_edit_date',
+        'article.link',
+        'article.owner',
+        'article.score',
+        'article.tags',
+        'article.title',
+        'article.view_count'
+    ]
+    filter_attributes = ';'.join(filter_attributes)
+    filter_string = v2client.create_filter(filter_attributes, 'default')
+    api_data['articles'] = v2client.get_all_articles(filter_string=filter_string)
 
     return api_data
 
@@ -157,37 +165,66 @@ class V2Client(object):
             raise SystemExit
 
 
-    def get_all_questions(self, filter_id=''):
+    def get_all_questions(self, filter_string=''):
 
         endpoint = "/questions"
         endpoint_url = self.api_url + endpoint
+
+        params = {
+            'page': 1,
+            'pagesize': 100,
+        }
+        if filter_string:
+            params['filter'] = filter_string
     
-        return self.get_items(endpoint_url, filter_id)
+        return self.get_items(endpoint_url, params)
 
 
-    def get_all_articles(self, filter_id=''):
+    def get_all_articles(self, filter_string=''):
 
         endpoint = "/articles"
         endpoint_url = self.api_url + endpoint
 
-        return self.get_items(endpoint_url, filter_id)
-
-
-    def get_items(self, endpoint_url, filter_id):
-        
         params = {
-            'page': 1, # if page is out of range, API returns empty list (no error)
+            'page': 1,
             'pagesize': 100,
         }
-        if filter_id:
-            params['filter'] = filter_id
+        if filter_string:
+            params['filter'] = filter_string
+
+        return self.get_items(endpoint_url, params)
+    
+
+    def create_filter(self, filter_attributes, base):
+        # filter_attributes should be a string of semicolon-separated fields
+        # base can be 'default', 'withbody', 'none', or 'total'
+
+        endpoint = "/filters/create"
+        endpoint_url = self.api_url + endpoint
+
+        params = {
+            'base': base,
+            'include': filter_attributes,
+            'unsafe': False,
+        }
+
+        filter_string = self.get_items(endpoint_url, params)[0]['filter']
+        print(f"Filter created: {filter_string}")
+
+        return filter_string
+
+
+    def get_items(self, endpoint_url, params={}):
 
         if not self.soe: # SO Basic and Business instances require a team slug in the params
             params['team'] = self.team_slug
 
         items = []
         while True: # Keep performing API calls until all items are received
-            print(f"Getting page {params['page']} from {endpoint_url}")
+            if params.get('page'):
+                print(f"Getting page {params['page']} from {endpoint_url}")
+            else:
+                print(f"Getting API data from {endpoint_url}")
             response = requests.get(endpoint_url, headers=self.headers, params=params, 
                                     verify=self.ssl_verify)
             
@@ -198,7 +235,7 @@ class V2Client(object):
                 print(f"/{endpoint_url} API call failed with status code: {response.status_code}.")
                 print(response.text)
                 print(f"Failed request URL and params: {response.request.url}")
-                break
+                raise SystemExit
 
             items += response.json().get('items')
             if not response.json().get('has_more'): # If there are no more items, break the loop
@@ -286,12 +323,14 @@ def decode_html_encoding(text):
 
 def write_csv(csv_data):
 
+    # MS Graph doesn't like underscore characters column headers
     csv_columns = ['type', 'title', 'body', 'tags', 'creation_date', 'last_edit_date', 'author',
                     'view_count', 'score', 'link']
+    header_row = {column: column.replace('_', ' ') for column in csv_columns}
 
     with open(CSV_NAME, 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=csv_columns, extrasaction='ignore')
-        writer.writeheader()
+        writer.writerow(header_row)
         for data in csv_data:
             writer.writerow(data)
 

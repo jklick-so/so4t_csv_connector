@@ -58,43 +58,20 @@ def get_api_data(args):
     v2client = V2Client(args)
     api_data = {}
 
-    # Get questions (and answers)
+    # Get question and answer data
     filter_attributes = [
         'answer.body',
-        'answer.creation_date',
-        'answer.is_accepted',
-        'answer.last_edit_date',
         'answer.link',
-        'answer.owner',
-        'answer.score',
         'question.answers',
         'question.body',
-        'question.creation_date',
-        'question.last_edit_date',
-        'question.link',
-        'question.owner',
-        'question.score',
-        'question.tags',
-        'question.title',
-        'question.view_count'
     ]
-    filter_attributes = ';'.join(filter_attributes)
     filter_string = v2client.create_filter(filter_attributes, 'default')
     api_data['questions'] = v2client.get_all_questions(filter_string=filter_string)
     
-    # Get articles
+    # Get article data
     filter_attributes = [
         'article.body',
-        'article.creation_date',
-        'article.last_edit_date',
-        'article.link',
-        'article.owner',
-        'article.score',
-        'article.tags',
-        'article.title',
-        'article.view_count'
     ]
-    filter_attributes = ';'.join(filter_attributes)
     filter_string = v2client.create_filter(filter_attributes, 'default')
     api_data['articles'] = v2client.get_all_articles(filter_string=filter_string)
 
@@ -195,8 +172,8 @@ class V2Client(object):
         return self.get_items(endpoint_url, params)
     
 
-    def create_filter(self, filter_attributes, base):
-        # filter_attributes should be a string of semicolon-separated fields
+    def create_filter(self, filter_attributes='', base='default'):
+        # filter_attributes should be a list variable containing strings of the attributes
         # base can be 'default', 'withbody', 'none', or 'total'
 
         endpoint = "/filters/create"
@@ -207,6 +184,10 @@ class V2Client(object):
             'include': filter_attributes,
             'unsafe': False,
         }
+
+        if filter_attributes:
+            # convert to semi-colon separated string
+            params['include'] = ';'.join(filter_attributes)
 
         filter_string = self.get_items(endpoint_url, params)[0]['filter']
         print(f"Filter created: {filter_string}")
